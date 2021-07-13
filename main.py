@@ -3,6 +3,7 @@ import imageio
 import keras
 import tensorflow
 from imageai.Detection import ObjectDetection
+from PIL import Image
 
 trainImages = []
 for imagePath in glob.glob('C:/Users/razva/OneDrive/Desktop/dataset/train/*.jpg'):
@@ -28,14 +29,28 @@ for line in lines:
 
 detector = ObjectDetection()
 
-model_path = 'C:/Users/razva/OneDrive/Desktop/Facultate/Anul II/IA - Python/retina/models/yolo-tiny.h5'
-input_path = 'C:/Users/razva/OneDrive/Desktop/Facultate/Anul II/IA - Python/retina/input/test47.jpg'
-output_path = 'C:/Users/razva/OneDrive/Desktop/Facultate/Anul II/IA - Python/retina/output/newimage2.jpg'
+model_path = 'C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/yolo/models/yolo.h5'
+input_path = 'C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/yolo/input/final.jpg'
+output_path = 'C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/yolo/output/'
 
-detector.setModelTypeAsTinyYOLOv3()
+detector.setModelTypeAsYOLOv3()
 detector.setModelPath(model_path)
 detector.loadModel()
-detection = detector.detectObjectsFromImage(input_image=input_path, output_image_path=output_path)
 
-for eachItem in detection:
-    print(eachItem["name"] , " : ", eachItem["percentage_probability"])
+for imagePath in glob.glob('C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/yolo/input/*.jpg'):
+     returned_image, detection = detector.detectObjectsFromImage(input_image = imagePath, output_type = "array")
+     max_percentage_probability = 0
+     index = -1
+     i = -1
+     for eachItem in detection:
+          i += 1
+          if eachItem["name"] == "car" and eachItem["percentage_probability"] > max_percentage_probability:
+               index = i
+               max_percentage_probability = eachItem["percentage_probability"]
+
+     print(detection[index]["name"] , " : ", detection[index]["percentage_probability"], " : ", detection[index]["box_points"])
+
+     image = Image.open(imagePath)
+     box = detection[index]["box_points"]
+     image = image.crop(box)
+     image.save(output_path + imagePath[69:])
