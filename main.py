@@ -56,6 +56,7 @@ for imagePath in glob.glob('C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recogn
           print('undetectable')
           image = Image.open(imagePath)
           image.save(output_path + imagePath[71:])
+          continue
 
      image = Image.open(imagePath)
      box = detection[index]["box_points"]
