@@ -29,38 +29,45 @@ def vehicleDetector(input_path, output_path):
 
           if ok:
                print(detection[index]['name'] , " : ", detection[index]['percentage_probability'], " : ", detection[index]['box_points'])
+               image = Image.open(imagePath)
+               box = detection[index]['box_points']
+               image = image.crop(box)
+               image.save(output_path + imagePath[71:])
           else:
                print('undetectable')
                image = Image.open(imagePath)
                image.save(output_path + imagePath[71:])
                continue
 
-          image = Image.open(imagePath)
-          box = detection[index]['box_points']
-          image = image.crop(box)
-          image.save(output_path + imagePath[71:])
+def input(input_path_train_images, input_path_train_labels, input_path_test_images, input_path_test_labels):
+     vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/dataset/train/*.jpg', 'C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/dataset/newTrain/')
+     vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/dataset/test/*.jpg', 'C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/dataset/newTest/')
 
-vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/dataset/train/*.jpg', 'C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/dataset/newTrain/')
-vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/dataset/test/*.jpg', 'C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/dataset/newTest/')
+     trainImages = []
+     for imagePath in glob.glob(input_path_train_images):
+          image = imageio.imread(imagePath)
+          trainImages.append(image)
 
-trainImages = []
-for imagePath in glob.glob('C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/dataset/newTrain/*jpg'):
-     image = imageio.imread(imagePath)
-     trainImages.append(image)
+     trainLabels = []
+     f = open(input_path_train_labels, 'r')
+     lines = f.readlines()
+     for line in lines:
+          trainLabels.append(int(line))
 
-trainLabels = []
-f = open('C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/dataset/trainLabel.txt', 'r')
-lines = f.readlines()
-for line in lines:
-     trainLabels.append(int(line))
+     testImages = []
+     for imagePath in glob.glob(input_path_test_images):
+          image = imageio.imread(imagePath)
+          testImages.append(image)
 
-testImages = []
-for imagePath in glob.glob('C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/dataset/newTest/*.jpg'):
-     image = imageio.imread(imagePath)
-     testImages.append(image)
+     testLabels = []
+     f = open(input_path_test_labels, 'r')
+     lines = f.readlines()
+     for line in lines:
+          testLabels.append(int(line))
 
-testLabels = []
-f = open('C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/dataset/testLabel.txt', 'r')
-lines = f.readlines()
-for line in lines:
-     testLabels.append(int(line))
+     return trainImages, trainLabels, testImages, testLabels
+
+trainImages, trainLabels, testImages, testLabels = input('C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/dataset/newTrain/*jpg',
+                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/dataset/trainLabel.txt',
+                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/dataset/newTest/*.jpg',
+                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle-Color-Recognition/dataset/testLabel.txt')
