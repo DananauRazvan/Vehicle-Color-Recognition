@@ -1,9 +1,12 @@
 import glob
 import imageio
 import keras
-import tensorflow as tf
+import tensorflow
 from imageai.Detection import ObjectDetection
 from PIL import Image
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+import numpy
 
 def vehicleDetector(input_path, output_path):
     detector = ObjectDetection()
@@ -41,11 +44,12 @@ def vehicleDetector(input_path, output_path):
             continue
 
 def input(input_path_train_images, input_path_train_labels, input_path_test_images, input_path_test_labels):
+    """
     vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/train/*.jpg',
                     'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrain/')
     vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/test/*.jpg',
                     'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTest/')
-
+    """
     trainImages = []
     for imagePath in glob.glob(input_path_train_images):
         image = imageio.imread(imagePath)
@@ -75,3 +79,50 @@ trainImages, trainLabels, testImages, testLabels = input('C:/Users/razva/OneDriv
                                                          'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/trainLabel.txt',
                                                          'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTest/*.jpg',
                                                          'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/testLabel.txt')
+
+def principalComponentAnalysis():
+    size = 0
+    for i in range(len(trainImages)):
+        if len(trainImages[i]) > size:
+            size = len(trainImages[i])
+
+    for i in range(len(trainImages)):
+        aux = numpy.array(trainImages[i])
+        aux.resize(size)
+        trainImages[i] = aux
+
+    stdTrainImages = numpy.array(trainImages)
+    stdTrainImages = StandardScaler().fit_transform(stdTrainImages)
+
+    """
+    covTrainImages = numpy.cov(stdTrainImages.T)
+
+    eigValsTrainImages, eigVecsTrainImages = numpy.linalg.eig(covTrainImages)
+
+    total = sum(eigValsTrainImages)
+    varExp = [(i / total) * 100 for i in sorted(eigValsTrainImages, reverse = True)]
+    cumVarExp = numpy.cumsum(varExp)
+    """
+
+    pcaTrainImages = PCA(n_components = 10)
+    pcaTrainImages = pcaTrainImages.fit_transform(stdTrainImages)
+
+    size = 0
+    for i in range(len(testImages)):
+        if len(testImages[i]) > size:
+            size = len(testImages[i])
+
+    for i in range(len(testImages)):
+        aux = numpy.array(testImages[i])
+        aux.resize(size)
+        testImages[i] = aux
+
+    stdTestImages = numpy.array(testImages)
+    stdTestImages = StandardScaler().fit_transform(stdTestImages)
+
+    pcaTestImages = PCA(n_components = 3)
+    pcaTestImages = pcaTestImages.fit_transform(stdTestImages)
+
+    print(pcaTestImages)
+
+principalComponentAnalysis()
