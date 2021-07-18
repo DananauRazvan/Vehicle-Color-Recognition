@@ -44,12 +44,11 @@ def vehicleDetector(input_path, output_path):
             continue
 
 def input(input_path_train_images, input_path_train_labels, input_path_test_images, input_path_test_labels):
-    """
     vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/train/*.jpg',
                     'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrain/')
     vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/test/*.jpg',
                     'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTest/')
-    """
+
     trainImages = []
     for imagePath in glob.glob(input_path_train_images):
         image = imageio.imread(imagePath)
@@ -75,12 +74,12 @@ def input(input_path_train_images, input_path_train_labels, input_path_test_imag
     return trainImages, trainLabels, testImages, testLabels
 
 
-trainImages, trainLabels, testImages, testLabels = input('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrain/*jpg',
-                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/trainLabel.txt',
-                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTest/*.jpg',
-                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/testLabel.txt')
-
 def principalComponentAnalysis():
+    trainImages, trainLabels, testImages, testLabels = input('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrain/*jpg',
+                                                             'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/trainLabel.txt',
+                                                             'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTest/*.jpg',
+                                                             'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/testLabel.txt')
+
     size = 0
     for i in range(len(trainImages)):
         if len(trainImages[i]) > size:
@@ -122,7 +121,5 @@ def principalComponentAnalysis():
 
     pcaTestImages = PCA(n_components = 3)
     pcaTestImages = pcaTestImages.fit_transform(stdTestImages)
-
-    print(pcaTestImages)
 
 principalComponentAnalysis()
