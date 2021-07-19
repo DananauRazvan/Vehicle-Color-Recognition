@@ -15,7 +15,7 @@ def vehicleDetector(input_path, output_path):
 
     detector.setModelTypeAsYOLOv3()
     detector.setModelPath(model_path, )
-    detector.loadModel(detection_speed = "flash")
+    detector.loadModel(detection_speed = 'flash')
 
     for imagePath in glob.glob(input_path):
         returned_image, detection = detector.detectObjectsFromImage(input_image = imagePath, output_type = 'array')
@@ -31,8 +31,7 @@ def vehicleDetector(input_path, output_path):
                 ok = True
 
         if ok:
-            print(detection[index]['name'], " : ", detection[index]['percentage_probability'], " : ",
-                  detection[index]['box_points'])
+            print(detection[index]['name'], " : ", detection[index]['percentage_probability'], " : ", detection[index]['box_points'])
             image = Image.open(imagePath)
             box = detection[index]['box_points']
             image = image.crop(box)
@@ -93,6 +92,9 @@ def principalComponentAnalysis():
     stdTrainImages = numpy.array(trainImages)
     stdTrainImages = StandardScaler().fit_transform(stdTrainImages)
 
+    pcaTrainImages = PCA(n_components=10)
+    pcaTrainImages = pcaTrainImages.fit_transform(stdTrainImages)
+
     """
     covTrainImages = numpy.cov(stdTrainImages.T)
 
@@ -102,9 +104,6 @@ def principalComponentAnalysis():
     varExp = [(i / total) * 100 for i in sorted(eigValsTrainImages, reverse = True)]
     cumVarExp = numpy.cumsum(varExp)
     """
-
-    pcaTrainImages = PCA(n_components = 10)
-    pcaTrainImages = pcaTrainImages.fit_transform(stdTrainImages)
 
     size = 0
     for i in range(len(testImages)):
@@ -122,4 +121,6 @@ def principalComponentAnalysis():
     pcaTestImages = PCA(n_components = 3)
     pcaTestImages = pcaTestImages.fit_transform(stdTestImages)
 
-principalComponentAnalysis()
+    return pcaTrainImages, pcaTestImages
+
+pcaTrainImages, pcaTestImages = principalComponentAnalysis()
