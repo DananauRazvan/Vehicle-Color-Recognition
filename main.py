@@ -118,7 +118,7 @@ def principalComponentAnalysis():
     stdTestImages = numpy.array(testImages)
     stdTestImages = StandardScaler().fit_transform(stdTestImages)
 
-    pcaTestImages = PCA(n_components = 3)
+    pcaTestImages = PCA(n_components = 10)
     pcaTestImages = pcaTestImages.fit_transform(stdTestImages)
 
     return pcaTrainImages, pcaTestImages
