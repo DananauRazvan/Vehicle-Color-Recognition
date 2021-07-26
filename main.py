@@ -104,7 +104,6 @@ def knn(trainImages, trainLabels, testImages, testLabels):
     pred = classifier.predict(testImages)
 
     print(classification_report(testLabels, pred))
-    print(pred)
 
 def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, inputPathTestLabels):
     trainImages = []
