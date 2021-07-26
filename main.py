@@ -131,7 +131,6 @@ def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, input
 
     return trainImages, trainLabels, testImages, testLabels
 
-"""
 vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/train/*.jpg',
                 'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrain/')
 vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/test/*.jpg',
@@ -141,7 +140,6 @@ principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recogn
                            'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrainPCA/')
 principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTest/*.jpg',
                            'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTestPCA/')
-"""
 
 trainImages, trainLabels, testImages, testLabels = input('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrainPCA/*.jpg',
                                                          'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/trainLabel.txt',
