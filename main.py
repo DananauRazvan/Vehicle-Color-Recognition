@@ -6,6 +6,11 @@ from imageai.Detection import ObjectDetection
 from PIL import Image
 from sklearn.decomposition import PCA
 import cv2
+from sklearn.neighbors import KNeighborsClassifier
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report
+import matplotlib as plt
 
 def vehicleDetector(inputPath, outputPath):
     detector = ObjectDetection()
@@ -34,10 +39,12 @@ def vehicleDetector(inputPath, outputPath):
             image = Image.open(imagePath)
             box = detection[index]['box_points']
             image = image.crop(box)
+            image = image.resize((224, 224))
             image.save(outputPath + imagePath[71:])
         else:
             print('undetectable')
             image = Image.open(imagePath)
+            image = image.resize((224, 224))
             image.save(outputPath + imagePath[71:])
             continue
 
@@ -74,10 +81,35 @@ def principalComponentAnalysis(inputPath, outputPath):
 
         cv2.imwrite(outputPath + name, imageReduced * 255)
 
+def knn(trainImages, trainLabels, testImages, testLabels):
+    trainImages = np.array(trainImages)
+    nr, height, width, dim = trainImages.shape
+    trainImages = trainImages.reshape(nr, height * width * dim)
+
+    testImages = np.array(testImages)
+    nr, height, width, dim = testImages.shape
+    testImages = testImages.reshape(nr, height * width * dim)
+
+    scaler = StandardScaler()
+
+    scaler.fit(trainImages)
+
+    trainImages = scaler.transform(trainImages)
+    testImages = scaler.transform(testImages)
+
+    classifier = KNeighborsClassifier(n_neighbors = 25)
+
+    classifier.fit(trainImages, trainLabels)
+
+    pred = classifier.predict(testImages)
+
+    print(classification_report(testLabels, pred))
+    print(pred)
+
 def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, inputPathTestLabels):
     trainImages = []
     for imagePath in glob.glob(inputPathTrainImages):
-        image = imageio.imread(imagePath)
+        image = imageio.imread(imagePath, pilmode = 'RGB')
         trainImages.append(image)
 
     trainLabels = []
@@ -88,7 +120,7 @@ def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, input
 
     testImages = []
     for imagePath in glob.glob(inputPathTestImages):
-        image = imageio.imread(imagePath)
+        image = imageio.imread(imagePath, pilmode = 'RGB')
         testImages.append(image)
 
     testLabels = []
@@ -99,6 +131,7 @@ def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, input
 
     return trainImages, trainLabels, testImages, testLabels
 
+"""
 vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/train/*.jpg',
                 'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrain/')
 vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/test/*.jpg',
@@ -108,3 +141,11 @@ principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recogn
                            'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrainPCA/')
 principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTest/*.jpg',
                            'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTestPCA/')
+"""
+
+trainImages, trainLabels, testImages, testLabels = input('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrainPCA/*.jpg',
+                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/trainLabel.txt',
+                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTestPCA/*.jpg',
+                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/testLabel.txt')
+
+knn(trainImages, trainLabels, testImages, testLabels)
