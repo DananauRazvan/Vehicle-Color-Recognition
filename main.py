@@ -12,6 +12,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn import metrics
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
+from sklearn.svm import SVC
 
 def vehicleDetector(inputPath, outputPath):
     detector = ObjectDetection()
@@ -82,7 +83,7 @@ def principalComponentAnalysis(inputPath, outputPath):
 
         cv2.imwrite(outputPath + name, imageReduced * 255)
 
-def knn(trainImages, trainLabels, testImages, testLabels, k = 23):
+def knn(trainImages, trainLabels, testImages, testLabels, k = 23, dist = 'minkowski'):
     trainImages = np.array(trainImages)
     nr, height, width, dim = trainImages.shape
     trainImages = trainImages.reshape(nr, height * width * dim)
@@ -98,7 +99,7 @@ def knn(trainImages, trainLabels, testImages, testLabels, k = 23):
     trainImages = scaler.transform(trainImages)
     testImages = scaler.transform(testImages)
 
-    classifier = KNeighborsClassifier(n_neighbors = k)
+    classifier = KNeighborsClassifier(n_neighbors = k, metric = dist)
 
     classifier.fit(trainImages, trainLabels)
 
@@ -125,6 +126,34 @@ def findOptimalK():
     plt.ylabel('Accuracy')
 
     plt.show()
+
+def svm(trainImages, trainLabels, testImages, testLabels):
+    trainImages = np.array(trainImages)
+    nr, height, width, dim = trainImages.shape
+    trainImages = trainImages.reshape(nr, height * width * dim)
+
+    testImages = np.array(testImages)
+    nr, height, width, dim = testImages.shape
+    testImages = testImages.reshape(nr, height * width * dim)
+
+    scaler = StandardScaler()
+
+    scaler.fit(trainImages)
+
+    trainImages = scaler.transform(trainImages)
+    testImages = scaler.transform(testImages)
+
+    classifier = SVC(kernel = 'linear')
+
+    classifier.fit(trainImages, trainLabels)
+
+    pred = classifier.predict(testImages)
+
+    print(metrics.accuracy_score(testLabels, pred))
+
+    print(metrics.classification_report(testLabels, pred))
+
+    print(metrics.confusion_matrix(testLabels, pred))
 
 def kMeansClustering(trainImages):
     trainImages = np.array(trainImages)
@@ -181,4 +210,4 @@ trainImages, trainLabels, testImages, testLabels = input('C:/Users/razva/OneDriv
                                                          'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/NewTestPCA/*.jpg',
                                                          'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/testLabel.txt')
 
-knn(trainImages, trainLabels, testImages, testLabels)
+svm(trainImages, trainLabels, testImages, testLabels)
