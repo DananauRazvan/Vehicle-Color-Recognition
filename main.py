@@ -9,8 +9,9 @@ import cv2
 from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import classification_report
-import matplotlib as plt
+from sklearn import metrics
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
 
 def vehicleDetector(inputPath, outputPath):
     detector = ObjectDetection()
@@ -81,7 +82,7 @@ def principalComponentAnalysis(inputPath, outputPath):
 
         cv2.imwrite(outputPath + name, imageReduced * 255)
 
-def knn(trainImages, trainLabels, testImages, testLabels):
+def knn(trainImages, trainLabels, testImages, testLabels, k = 23):
     trainImages = np.array(trainImages)
     nr, height, width, dim = trainImages.shape
     trainImages = trainImages.reshape(nr, height * width * dim)
@@ -97,20 +98,56 @@ def knn(trainImages, trainLabels, testImages, testLabels):
     trainImages = scaler.transform(trainImages)
     testImages = scaler.transform(testImages)
 
-    classifier = KNeighborsClassifier(n_neighbors = 25)
+    classifier = KNeighborsClassifier(n_neighbors = k)
 
     classifier.fit(trainImages, trainLabels)
 
     pred = classifier.predict(testImages)
 
-    print(classification_report(testLabels, pred))
+    print(metrics.accuracy_score(testLabels, pred))
+
+    print(metrics.classification_report(testLabels, pred))
+
+    print(metrics.confusion_matrix(testLabels, pred))
+
+    return metrics.accuracy_score(testLabels, pred)
+
+def findOptimalK():
+    accuracy = []
+    for i in range(1, 100):
+        accuracy.append(knn(trainImages, trainLabels, testImages, testLabels, i))
+    accuracy = np.array(accuracy)
+
+    plt.figure(figsize = (10, 6))
+    plt.plot(range(1, 100), accuracy, color = 'red', linestyle = 'dashed', marker = 'o', markerfacecolor = 'blue', markersize = 8)
+    plt.title('Best Accuracy')
+    plt.xlabel('K')
+    plt.ylabel('Accuracy')
+
+    plt.show()
+
+def kMeansClustering(trainImages):
+    trainImages = np.array(trainImages)
+    nr, height, width, dim = trainImages.shape
+    trainImages = trainImages.reshape(nr, height * width * dim)
+
+    """
+    plt.scatter(trainImages[:, 0], trainImages[:, 1])
+    plt.show()
+    """
+
+    clustering = KMeans(n_clusters = 9)
+
+    clustering.fit(trainImages)
+
+    plt.scatter(trainImages[:, 0], trainImages[:, 1], c = clustering.labels_, cmap = 'rainbow')
+    plt.show()
 
 def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, inputPathTestLabels):
     trainImages = []
     for imagePath in glob.glob(inputPathTrainImages):
         image = imageio.imread(imagePath, pilmode = 'RGB')
         trainImages.append(image)
-
     trainLabels = []
     f = open(inputPathTrainLabels, 'r')
     lines = f.readlines()
@@ -127,9 +164,8 @@ def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, input
     lines = f.readlines()
     for line in lines:
         testLabels.append(int(line))
-
     return trainImages, trainLabels, testImages, testLabels
-
+"""
 vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/train/*.jpg',
                 'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrain/')
 vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/test/*.jpg',
@@ -139,10 +175,10 @@ principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recogn
                            'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrainPCA/')
 principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTest/*.jpg',
                            'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTestPCA/')
-
+"""
 trainImages, trainLabels, testImages, testLabels = input('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrainPCA/*.jpg',
                                                          'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/trainLabel.txt',
-                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTestPCA/*.jpg',
+                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/NewTestPCA/*.jpg',
                                                          'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/testLabel.txt')
 
 knn(trainImages, trainLabels, testImages, testLabels)
