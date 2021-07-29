@@ -83,7 +83,7 @@ def principalComponentAnalysis(inputPath, outputPath):
 
         cv2.imwrite(outputPath + name, imageReduced * 255)
 
-def knn(trainImages, trainLabels, testImages, testLabels, k = 23, dist = 'minkowski'):
+def knn(trainImages, trainLabels, testImages, testLabels, k = 59, dist = 'manhattan'):
     trainImages = np.array(trainImages)
     nr, height, width, dim = trainImages.shape
     trainImages = trainImages.reshape(nr, height * width * dim)
@@ -121,7 +121,7 @@ def findOptimalK():
 
     plt.figure(figsize = (10, 6))
     plt.plot(range(1, 100), accuracy, color = 'red', linestyle = 'dashed', marker = 'o', markerfacecolor = 'blue', markersize = 8)
-    plt.title('Best Accuracy')
+    plt.title('Manhattan Distance')
     plt.xlabel('K')
     plt.ylabel('Accuracy')
 
