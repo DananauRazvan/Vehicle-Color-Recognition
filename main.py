@@ -13,6 +13,7 @@ from sklearn import metrics
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 from sklearn.svm import SVC
+from sklearn.naive_bayes import GaussianNB
 
 def vehicleDetector(inputPath, outputPath):
     detector = ObjectDetection()
@@ -155,6 +156,34 @@ def svm(trainImages, trainLabels, testImages, testLabels):
 
     print(metrics.confusion_matrix(testLabels, pred))
 
+def naiveBayes(trainImages, trainLabels, testImages, testLabels):
+    trainImages = np.array(trainImages)
+    nr, height, width, dim = trainImages.shape
+    trainImages = trainImages.reshape(nr, height * width * dim)
+
+    testImages = np.array(testImages)
+    nr, height, width, dim = testImages.shape
+    testImages = testImages.reshape(nr, height * width * dim)
+
+    scaler = StandardScaler()
+
+    scaler.fit(trainImages)
+
+    trainImages = scaler.transform(trainImages)
+    testImages = scaler.transform(testImages)
+
+    classifier = GaussianNB()
+
+    classifier.fit(trainImages, trainLabels)
+
+    pred = classifier.predict(testImages)
+
+    print(metrics.accuracy_score(testLabels, pred))
+
+    print(metrics.classification_report(testLabels, pred))
+
+    print(metrics.confusion_matrix(testLabels, pred))
+
 def kMeansClustering(trainImages):
     trainImages = np.array(trainImages)
     nr, height, width, dim = trainImages.shape
@@ -194,7 +223,7 @@ def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, input
     for line in lines:
         testLabels.append(int(line))
     return trainImages, trainLabels, testImages, testLabels
-
+"""
 vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/train/*.jpg',
                 'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrain/')
 vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/test/*.jpg',
@@ -204,7 +233,7 @@ principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recogn
                            'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrainPCA/')
 principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTest/*.jpg',
                            'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTestPCA/')
-
+"""
 trainImages, trainLabels, testImages, testLabels = input('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrainPCA/*.jpg',
                                                          'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/trainLabel.txt',
                                                          'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/NewTestPCA/*.jpg',
