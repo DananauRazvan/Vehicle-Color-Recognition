@@ -12,8 +12,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn import metrics
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
+from sklearn_som.som import SOM
 
 def vehicleDetector(inputPath, outputPath):
     detector = ObjectDetection()
@@ -201,6 +203,35 @@ def kMeansClustering(trainImages):
     plt.scatter(trainImages[:, 0], trainImages[:, 1], c = clustering.labels_, cmap = 'rainbow')
     plt.show()
 
+def selfOrganizingMaps(images, labels):
+    images = np.array(images)
+    nr, height, width, dim = images.shape
+    images = images.reshape(nr, height * width * dim)
+
+    scaler = StandardScaler()
+
+    scaler.fit(images)
+
+    images = scaler.transform(images)
+
+    cls = SOM(m = 9, n = 1, dim = height * width * dim)
+
+    cls.fit(images)
+
+    pred = cls.predict(images)
+
+    fig, ax = plt.subplots(nrows = 2, ncols = 1, figsize = (5, 7))
+    x = images[:, 0]
+    y = images[:, 1]
+    colors = ['black', 'blue', 'brown', 'green', 'pink', 'red', 'silver', 'white', 'yellow']
+
+    ax[0].scatter(x, y, c = labels, cmap = ListedColormap(colors))
+    ax[0].title.set_text('Actual Classes Standardization')
+    ax[1].scatter(x, y, c = pred, cmap = ListedColormap(colors))
+    ax[1].title.set_text('SOM Predictions Standardization')
+
+    plt.show()
+
 def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, inputPathTestLabels):
     trainImages = []
     for imagePath in glob.glob(inputPathTrainImages):
@@ -223,7 +254,7 @@ def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, input
     for line in lines:
         testLabels.append(int(line))
     return trainImages, trainLabels, testImages, testLabels
-
+"""
 vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/train/*.jpg',
                 'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrain/')
 vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/test/*.jpg',
@@ -233,7 +264,7 @@ principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recogn
                            'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrainPCA/')
 principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTest/*.jpg',
                            'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTestPCA/')
-
+"""
 trainImages, trainLabels, testImages, testLabels = input('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrainPCA/*.jpg',
                                                          'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/trainLabel.txt',
                                                          'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/NewTestPCA/*.jpg',
