@@ -1,6 +1,9 @@
 import glob
 import imageio
 import keras
+from keras.models import Sequential
+from keras.layers import Dense, Conv2D, MaxPool2D, Flatten
+from keras.optimizers import Adam
 import tensorflow
 from imageai.Detection import ObjectDetection
 from PIL import Image
@@ -232,11 +235,65 @@ def selfOrganizingMaps(images, labels):
 
     plt.show()
 
+def vgg16(trainImages, trainLabels, testImages, testLabels):
+    trainLabels = np.array(trainLabels)
+    testLabels = np.array(testLabels)
+    trainImages = np.array(trainImages)
+    testImages = np.array(testImages)
+
+    model = Sequential()
+
+    model.add(Conv2D(input_shape = (224, 224, 3), filters = 64, kernel_size = (3, 3), padding = "same", activation = "relu"))
+    model.add(Conv2D(filters = 64, kernel_size = (3, 3), padding = "same", activation = "relu"))
+
+    model.add(MaxPool2D(pool_size = (2, 2), strides = (2, 2)))
+
+    model.add(Conv2D(filters = 128, kernel_size = (3, 3), padding = "same", activation = "relu"))
+    model.add(Conv2D(filters = 128, kernel_size = (3, 3), padding = "same", activation = "relu"))
+
+    model.add(MaxPool2D(pool_size = (2, 2), strides = (2, 2)))
+
+    model.add(Conv2D(filters = 256, kernel_size = (3, 3), padding = "same", activation = "relu"))
+    model.add(Conv2D(filters = 256, kernel_size = (3, 3), padding = "same", activation = "relu"))
+    model.add(Conv2D(filters = 256, kernel_size = (3, 3), padding = "same", activation = "relu"))
+
+    model.add(MaxPool2D(pool_size = (2, 2), strides = (2, 2)))
+
+    model.add(Conv2D(filters = 512, kernel_size = (3, 3), padding = "same", activation = "relu"))
+    model.add(Conv2D(filters = 512, kernel_size = (3, 3), padding = "same", activation = "relu"))
+    model.add(Conv2D(filters = 512, kernel_size = (3, 3), padding = "same", activation = "relu"))
+
+    model.add(MaxPool2D(pool_size = (2, 2), strides = (2, 2)))
+
+    model.add(Conv2D(filters = 512, kernel_size = (3, 3), padding = "same", activation = "relu"))
+    model.add(Conv2D(filters = 512, kernel_size = (3, 3), padding = "same", activation = "relu"))
+    model.add(Conv2D(filters = 512, kernel_size = (3, 3), padding = "same", activation = "relu"))
+
+    model.add(MaxPool2D(pool_size = (2, 2), strides = (2, 2)))
+
+    model.add(Flatten())
+
+    model.add(Dense(units = 4096, activation = "relu"))
+    model.add(Dense(units = 4096, activation = "relu"))
+
+    model.add(Dense(units = 9, activation = "softmax"))
+
+    opt = Adam(learning_rate = 0.001)
+
+    model.compile(optimizer = opt, loss = keras.losses.sparse_categorical_crossentropy, metrics = ['accuracy'])
+
+    model.fit(trainImages, trainLabels, epochs = 10)
+
+    pred = model.predict(testImages)
+
+    print(pred)
+
 def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, inputPathTestLabels):
     trainImages = []
     for imagePath in glob.glob(inputPathTrainImages):
         image = imageio.imread(imagePath, pilmode = 'RGB')
         trainImages.append(image)
+
     trainLabels = []
     f = open(inputPathTrainLabels, 'r')
     lines = f.readlines()
@@ -254,7 +311,7 @@ def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, input
     for line in lines:
         testLabels.append(int(line))
     return trainImages, trainLabels, testImages, testLabels
-
+"""
 vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/train/*.jpg',
                 'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrain/')
 vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/test/*.jpg',
@@ -264,10 +321,10 @@ principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recogn
                            'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrainPCA/')
 principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTest/*.jpg',
                            'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTestPCA/')
+"""
+trainImages, trainLabels, testImages, testLabels = input('/home/sector15/PycharmProjects/Vehicle Color Recognition/dataset/newTrainPCA/*.jpg',
+                                                         '/home/sector15/PycharmProjects/Vehicle Color Recognition/dataset/trainLabel.txt',
+                                                         '/home/sector15/PycharmProjects/Vehicle Color Recognition/dataset/newTestPCA/*.jpg',
+                                                         '/home/sector15/PycharmProjects/Vehicle Color Recognition/dataset/testLabel.txt')
 
-trainImages, trainLabels, testImages, testLabels = input('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrainPCA/*.jpg',
-                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/trainLabel.txt',
-                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/NewTestPCA/*.jpg',
-                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/testLabel.txt')
-
-svm(trainImages, trainLabels, testImages, testLabels)
+vgg16(trainImages, trainLabels, testImages, testLabels)
