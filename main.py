@@ -160,6 +160,7 @@ def svm(trainImages, trainLabels, testImages, testLabels):
     print(metrics.classification_report(testLabels, pred))
 
     print(metrics.confusion_matrix(testLabels, pred))
+    print(pred)
 
 def naiveBayes(trainImages, trainLabels, testImages, testLabels):
     trainImages = np.array(trainImages)
@@ -236,10 +237,10 @@ def selfOrganizingMaps(images, labels):
     plt.show()
 
 def vgg16(trainImages, trainLabels, testImages, testLabels):
-    trainLabels = np.array(trainLabels)
-    testLabels = np.array(testLabels)
     trainImages = np.array(trainImages)
+    trainLabels = np.array(trainLabels)
     testImages = np.array(testImages)
+    testLabels = np.array(testLabels)
 
     model = Sequential()
 
@@ -280,7 +281,7 @@ def vgg16(trainImages, trainLabels, testImages, testLabels):
 
     opt = Adam(learning_rate = 0.001)
 
-    model.compile(optimizer = opt, loss = keras.losses.sparse_categorical_crossentropy, metrics = ['accuracy'])
+    model.compile(optimizer = opt,loss = keras.losses.sparse_categorical_crossentropy, metrics = ['accuracy'])
 
     model.fit(trainImages, trainLabels, epochs = 10)
 
@@ -293,7 +294,6 @@ def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, input
     for imagePath in glob.glob(inputPathTrainImages):
         image = imageio.imread(imagePath, pilmode = 'RGB')
         trainImages.append(image)
-
     trainLabels = []
     f = open(inputPathTrainLabels, 'r')
     lines = f.readlines()
@@ -311,6 +311,48 @@ def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, input
     for line in lines:
         testLabels.append(int(line))
     return trainImages, trainLabels, testImages, testLabels
+
+def cnn(trainImages, trainLabels, testImages, testLabels):
+    trainImages = np.array(trainImages)
+    trainLabels = np.array(trainLabels)
+    testImages = np.array(testImages)
+    testLabels = np.array(testLabels)
+
+    trainImages = trainImages / 255
+    testImages = testImages / 255
+
+    model = Sequential()
+
+    model.add(Conv2D(filters = 32, kernel_size = (3, 3), padding = 'same', activation = 'relu', input_shape = (224, 224, 3)))
+    model.add(MaxPool2D(pool_size = (2, 2), strides = (2, 2)))
+
+    model.add(Conv2D(filters = 64, kernel_size = (3, 3), padding = 'same', activation = 'relu'))
+    model.add(MaxPool2D(pool_size = (2, 2), strides = (2, 2)))
+
+    model.add(Conv2D(filters = 128, kernel_size = (3, 3), padding = 'same', activation = 'relu'))
+    model.add(MaxPool2D(pool_size = (2, 2), strides = (2, 2)))
+
+    model.add(Flatten())
+
+    model.add(Dense(256, activation = 'relu'))
+    model.add(Dense(9))
+
+    model.compile(optimizer = 'adam', loss = tensorflow.keras.losses.SparseCategoricalCrossentropy(from_logits = True), metrics = ['accuracy'])
+
+    model.fit(trainImages, trainLabels, epochs = 10)
+
+    predictionResult = model.predict(testImages)
+
+    pred = []
+    for i in range(len(predictionResult)):
+        pred.append(np.argmax(predictionResult[i], axis = -1))
+
+    print('Accuracy: ', metrics.accuracy_score(testLabels, pred))
+
+    print(metrics.classification_report(testLabels, pred))
+
+    print(metrics.confusion_matrix(testLabels, pred))
+
 """
 vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/train/*.jpg',
                 'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrain/')
@@ -322,9 +364,9 @@ principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recogn
 principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTest/*.jpg',
                            'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTestPCA/')
 """
-trainImages, trainLabels, testImages, testLabels = input('/home/sector15/PycharmProjects/Vehicle Color Recognition/dataset/newTrainPCA/*.jpg',
-                                                         '/home/sector15/PycharmProjects/Vehicle Color Recognition/dataset/trainLabel.txt',
-                                                         '/home/sector15/PycharmProjects/Vehicle Color Recognition/dataset/newTestPCA/*.jpg',
-                                                         '/home/sector15/PycharmProjects/Vehicle Color Recognition/dataset/testLabel.txt')
+trainImages, trainLabels, testImages, testLabels = input('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrainPCA/*.jpg',
+                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/trainLabel.txt',
+                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/NewTestPCA/*.jpg',
+                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/testLabel.txt')
 
-vgg16(trainImages, trainLabels, testImages, testLabels)
+cnn(trainImages, trainLabels, testImages, testLabels)
