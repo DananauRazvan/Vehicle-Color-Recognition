@@ -19,6 +19,7 @@ from matplotlib.colors import ListedColormap
 from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
 from sklearn_som.som import SOM
+import os
 
 def vehicleDetector(inputPath, outputPath):
     detector = ObjectDetection()
@@ -160,7 +161,6 @@ def svm(trainImages, trainLabels, testImages, testLabels):
     print(metrics.classification_report(testLabels, pred))
 
     print(metrics.confusion_matrix(testLabels, pred))
-    print(pred)
 
 def naiveBayes(trainImages, trainLabels, testImages, testLabels):
     trainImages = np.array(trainImages)
@@ -313,6 +313,9 @@ def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, input
     return trainImages, trainLabels, testImages, testLabels
 
 def cnn(trainImages, trainLabels, testImages, testLabels):
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+    tensorflow.random.set_seed(1)
+
     trainImages = np.array(trainImages)
     trainLabels = np.array(trainLabels)
     testImages = np.array(testImages)
@@ -339,7 +342,7 @@ def cnn(trainImages, trainLabels, testImages, testLabels):
 
     model.compile(optimizer = 'adam', loss = tensorflow.keras.losses.SparseCategoricalCrossentropy(from_logits = True), metrics = ['accuracy'])
 
-    model.fit(trainImages, trainLabels, epochs = 10)
+    model.fit(trainImages, trainLabels, epochs = 15)
 
     predictionResult = model.predict(testImages)
 
