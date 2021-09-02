@@ -1,7 +1,7 @@
 import glob
 import imageio
 import keras
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Dense, Conv2D, MaxPool2D, Flatten
 from keras.optimizers import Adam
 import tensorflow
@@ -20,6 +20,9 @@ from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
 from sklearn_som.som import SOM
 import os
+from flask import Flask, redirect, url_for, request, render_template
+from werkzeug.utils import secure_filename
+from gevent.pywsgi import WSGIServer
 
 def vehicleDetector(inputPath, outputPath):
     detector = ObjectDetection()
@@ -281,37 +284,13 @@ def vgg16(trainImages, trainLabels, testImages, testLabels):
 
     opt = Adam(learning_rate = 0.001)
 
-    model.compile(optimizer = opt,loss = keras.losses.sparse_categorical_crossentropy, metrics = ['accuracy'])
+    model.compile(optimizer = opt, loss = keras.losses.sparse_categorical_crossentropy, metrics = ['accuracy'])
 
     model.fit(trainImages, trainLabels, epochs = 10)
 
     pred = model.predict(testImages)
 
     print(pred)
-
-def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, inputPathTestLabels):
-    trainImages = []
-    for imagePath in glob.glob(inputPathTrainImages):
-        image = imageio.imread(imagePath, pilmode = 'RGB')
-        trainImages.append(image)
-    trainLabels = []
-    f = open(inputPathTrainLabels, 'r')
-    lines = f.readlines()
-    for line in lines:
-        trainLabels.append(int(line))
-
-    testImages = []
-    for imagePath in glob.glob(inputPathTestImages):
-        image = imageio.imread(imagePath, pilmode = 'RGB')
-        testImages.append(image)
-
-    testLabels = []
-    f = open(inputPathTestLabels, 'r')
-    lines = f.readlines()
-    for line in lines:
-        testLabels.append(int(line))
-    return trainImages, trainLabels, testImages, testLabels
-
 def cnn(trainImages, trainLabels, testImages, testLabels):
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     tensorflow.random.set_seed(1)
@@ -337,12 +316,15 @@ def cnn(trainImages, trainLabels, testImages, testLabels):
 
     model.add(Flatten())
 
-    model.add(Dense(256, activation = 'relu'))
-    model.add(Dense(9))
+    model.add(Dense(units = 256, activation = 'relu'))
 
-    model.compile(optimizer = 'adam', loss = tensorflow.keras.losses.SparseCategoricalCrossentropy(from_logits = True), metrics = ['accuracy'])
+    model.add(Dense(units = 9, activation = 'softmax'))
 
-    model.fit(trainImages, trainLabels, epochs = 15)
+    opt = Adam(learning_rate = 0.001)
+
+    model.compile(optimizer = opt, loss = 'sparse_categorical_crossentropy', metrics = ['accuracy'])
+
+    model.fit(trainImages, trainLabels, epochs = 15, batch_size = 64)
 
     predictionResult = model.predict(testImages)
 
@@ -350,11 +332,101 @@ def cnn(trainImages, trainLabels, testImages, testLabels):
     for i in range(len(predictionResult)):
         pred.append(np.argmax(predictionResult[i], axis = -1))
 
+    vehicles = ['Black Vehicles', 'Blue Vehicles', 'Brown Vehicles', 'Green Vehicles', 'Pink Vehicles', 'Red Vehicles', 'Silver Vehicles', 'White Vehicles', 'Yellow Vehicles']
+
     print('Accuracy: ', metrics.accuracy_score(testLabels, pred))
 
-    print(metrics.classification_report(testLabels, pred))
+    print(metrics.classification_report(testLabels, pred, target_names = vehicles))
 
     print(metrics.confusion_matrix(testLabels, pred))
+
+    i = 0
+    for image in sorted(glob.glob('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTestPCA/*.jpg')):
+        print(image, ' : ', pred[i])
+        i += 1
+
+def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, inputPathTestLabels):
+    trainImages = []
+    for imagePath in sorted(glob.glob(inputPathTrainImages)):
+        image = imageio.imread(imagePath, pilmode = 'RGB')
+        trainImages.append(image)
+    trainLabels = []
+    f = open(inputPathTrainLabels, 'r')
+    lines = f.readlines()
+    for line in lines:
+        trainLabels.append(int(line))
+
+    testImages = []
+    for imagePath in sorted(glob.glob(inputPathTestImages)):
+        image = imageio.imread(imagePath, pilmode = 'RGB')
+        testImages.append(image)
+
+    testLabels = []
+    f = open(inputPathTestLabels, 'r')
+    lines = f.readlines()
+    for line in lines:
+        testLabels.append(int(line))
+    return trainImages, trainLabels, testImages, testLabels
+
+def appFlask():
+    app = Flask(__name__)
+
+    print('Model loaded. Check http://127.0.0.1:5000/')
+
+    return app
+
+def predictModel(imagePath, trainImages, trainLabels):
+    trainImages = np.array(trainImages)
+    trainLabels = np.array(trainLabels)
+
+    trainImages = trainImages / 255
+
+    model = Sequential()
+
+    model.add(Conv2D(filters = 32, kernel_size = (3, 3), padding = 'same', activation = 'relu', input_shape = (224, 224, 3)))
+    model.add(MaxPool2D(pool_size = (2, 2), strides = (2, 2)))
+
+    model.add(Conv2D(filters = 64, kernel_size = (3, 3), padding = 'same', activation = 'relu'))
+    model.add(MaxPool2D(pool_size = (2, 2), strides = (2, 2)))
+
+    model.add(Conv2D(filters = 128, kernel_size = (3, 3), padding = 'same', activation = 'relu'))
+    model.add(MaxPool2D(pool_size = (2, 2), strides = (2, 2)))
+
+    model.add(Flatten())
+
+    model.add(Dense(units = 256, activation='relu'))
+
+    model.add(Dense(units = 9, activation='softmax'))
+
+    opt = Adam(learning_rate = 0.001)
+
+    model.compile(optimizer = opt, loss = 'sparse_categorical_crossentropy', metrics = ['accuracy'])
+
+    model.fit(trainImages, trainLabels, epochs = 15, batch_size = 64)
+
+    detector = ObjectDetection()
+
+    modelPath = 'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/yolo.h5'
+
+    detector.setModelTypeAsYOLOv3()
+    detector.setModelPath(modelPath, )
+    detector.loadModel(detection_speed = 'flash')
+
+    returnedImage, detection = detector.detectObjectsFromImage(input_image = imagePath, output_type = 'array')
+
+    image = Image.open(imagePath)
+
+    image = image.resize((224, 224))
+
+    image = np.array(image)
+
+    image = image.reshape(1, 224, 224, 3)
+
+    image = image / 255
+
+    pred = model.predict(image)
+
+    return pred, detection[0]['name'], detection[0]['box_points']
 
 """
 vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/train/*.jpg',
@@ -363,7 +435,7 @@ vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/datas
                 'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTest/')
 
 principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrain/*.jpg',
-                           'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrainPCA/')
+                            'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrainPCA/')
 principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTest/*.jpg',
                            'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTestPCA/')
 """
@@ -372,4 +444,51 @@ trainImages, trainLabels, testImages, testLabels = input('C:/Users/razva/OneDriv
                                                          'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/NewTestPCA/*.jpg',
                                                          'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/testLabel.txt')
 
-cnn(trainImages, trainLabels, testImages, testLabels)
+app = appFlask()
+
+@app.route('/', methods = ['GET'])
+def index():
+    # Main page
+    return render_template('index.html')
+
+@app.route('/predict', methods = ['GET', 'POST'])
+def upload():
+    if request.method == 'POST':
+        # Get the file from post request
+        f = request.files['file']
+
+        # Save the file to ./uploads
+        basepath = os.path.dirname(__file__)
+        filePath = os.path.join(basepath, 'uploads', secure_filename(f.filename))
+        f.save(filePath)
+
+        preds, vehicleType, boxPoints = predictModel(filePath, trainImages, trainLabels)
+
+        result = np.argmax(preds, axis = -1)
+
+        if result[0] == 0:
+            color = 'black'
+        elif result[0] == 1:
+            color = 'blue'
+        elif result[0] == 2:
+            color = 'brown'
+        elif result[0] == 3:
+            color = 'green'
+        elif result[0] == 4:
+            color = 'pink'
+        elif result[0] == 5:
+            color = 'red'
+        elif result[0] == 6:
+            color = 'silver'
+        elif result[0] == 7:
+            color = 'white'
+        elif result[0] == 8:
+            color = 'yellow'
+
+        output = color + ';' + vehicleType + ';[' + str(boxPoints[0]) + ', ' + str(boxPoints[1]) + ', ' + str(boxPoints[2]) + ', ' + str(boxPoints[3]) + ']'
+
+        return output
+
+    return None
+
+app.run(debug = True)
