@@ -33,7 +33,7 @@ def vehicleDetector(inputPath, outputPath):
     detector.setModelPath(modelPath, )
     detector.loadModel(detection_speed = 'flash')
 
-    for imagePath in glob.glob(inputPath):
+    for idx, imagePath in enumerate(glob.glob(inputPath)):
         returnedImage, detection = detector.detectObjectsFromImage(input_image = imagePath, output_type = 'array')
         maxPercentageProbability = 0
         index = -1
@@ -46,22 +46,27 @@ def vehicleDetector(inputPath, outputPath):
                 maxPercentageProbability = eachItem['percentage_probability']
                 ok = True
 
+        if inputPath == 'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/train/*.jpg':
+            imageType = 'Train image'
+        else:
+            imageType = 'Test image'
+
         if ok:
-            print(detection[index]['name'], " : ", detection[index]['percentage_probability'], " : ", detection[index]['box_points'])
+            print(imageType, str(idx) + ':', detection[index]['name'], detection[index]['percentage_probability'], detection[index]['box_points'])
             image = Image.open(imagePath)
             box = detection[index]['box_points']
             image = image.crop(box)
             image = image.resize((224, 224))
             image.save(outputPath + imagePath[71:])
         else:
-            print('undetectable')
+            print(imageType, str(idx) + ':', 'undetectable')
             image = Image.open(imagePath)
             image = image.resize((224, 224))
             image.save(outputPath + imagePath[71:])
             continue
 
 def principalComponentAnalysis(inputPath, outputPath):
-    for imagePath in glob.glob(inputPath):
+    for idx, imagePath in enumerate(glob.glob(inputPath)):
         image = cv2.imread(imagePath)
 
         red, green, blue = cv2.split(image)
@@ -88,10 +93,13 @@ def principalComponentAnalysis(inputPath, outputPath):
 
         if inputPath == 'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrain/*.jpg':
             name = imagePath[75:]
+            imageType = 'Train image'
         else:
             name = imagePath[74:]
+            imageType = 'Test image'
 
         cv2.imwrite(outputPath + name, imageReduced * 255)
+        print(imageType, idx, 'done')
 
 def knn(trainImages, trainLabels, testImages, testLabels, k = 59, dist = 'manhattan'):
     trainImages = np.array(trainImages)
@@ -291,6 +299,7 @@ def vgg16(trainImages, trainLabels, testImages, testLabels):
     pred = model.predict(testImages)
 
     print(pred)
+
 def cnn(trainImages, trainLabels, testImages, testLabels):
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     tensorflow.random.set_seed(1)
@@ -345,29 +354,6 @@ def cnn(trainImages, trainLabels, testImages, testLabels):
         print(image, ' : ', pred[i])
         i += 1
 
-def input(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, inputPathTestLabels):
-    trainImages = []
-    for imagePath in sorted(glob.glob(inputPathTrainImages)):
-        image = imageio.imread(imagePath, pilmode = 'RGB')
-        trainImages.append(image)
-    trainLabels = []
-    f = open(inputPathTrainLabels, 'r')
-    lines = f.readlines()
-    for line in lines:
-        trainLabels.append(int(line))
-
-    testImages = []
-    for imagePath in sorted(glob.glob(inputPathTestImages)):
-        image = imageio.imread(imagePath, pilmode = 'RGB')
-        testImages.append(image)
-
-    testLabels = []
-    f = open(inputPathTestLabels, 'r')
-    lines = f.readlines()
-    for line in lines:
-        testLabels.append(int(line))
-    return trainImages, trainLabels, testImages, testLabels
-
 def appFlask():
     app = Flask(__name__)
 
@@ -416,17 +402,19 @@ def predictModel(imagePath, trainImages, trainLabels):
 
     image = Image.open(imagePath)
 
-    image = image.resize((224, 224))
+    sol = []
+    for i in range(len(detection)):
+        imageX = image.crop(detection[i]['box_points'])
+        imageX = imageX.resize((224, 224))
+        imageX = np.array(imageX)
+        imageX = imageX.reshape(1, 224, 224, 3)
+        imageX = imageX / 255
 
-    image = np.array(image)
+        pred = model.predict(imageX)
 
-    image = image.reshape(1, 224, 224, 3)
+        sol.append((pred, detection[i]['name'], detection[i]['box_points']))
 
-    image = image / 255
-
-    pred = model.predict(image)
-
-    return pred, detection[0]['name'], detection[0]['box_points']
+    return sol
 
 """
 vehicleDetector('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/train/*.jpg',
@@ -439,56 +427,101 @@ principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recogn
 principalComponentAnalysis('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTest/*.jpg',
                            'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTestPCA/')
 """
-trainImages, trainLabels, testImages, testLabels = input('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrainPCA/*.jpg',
-                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/trainLabel.txt',
-                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/NewTestPCA/*.jpg',
-                                                         'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/testLabel.txt')
 
-app = appFlask()
+def inputDataset(inputPathTrainImages, inputPathTrainLabels, inputPathTestImages, inputPathTestLabels):
+    trainImages = []
+    for imagePath in sorted(glob.glob(inputPathTrainImages)):
+        image = imageio.imread(imagePath, pilmode = 'RGB')
+        trainImages.append(image)
 
-@app.route('/', methods = ['GET'])
-def index():
-    # Main page
-    return render_template('index.html')
+    trainLabels = []
+    f = open(inputPathTrainLabels, 'r')
+    lines = f.readlines()
+    for line in lines:
+        trainLabels.append(int(line))
 
-@app.route('/predict', methods = ['GET', 'POST'])
-def upload():
-    if request.method == 'POST':
-        # Get the file from post request
-        f = request.files['file']
+    testImages = []
+    for imagePath in sorted(glob.glob(inputPathTestImages)):
+        image = imageio.imread(imagePath, pilmode = 'RGB')
+        testImages.append(image)
 
-        # Save the file to ./uploads
-        basepath = os.path.dirname(__file__)
-        filePath = os.path.join(basepath, 'uploads', secure_filename(f.filename))
-        f.save(filePath)
+    testLabels = []
+    f = open(inputPathTestLabels, 'r')
+    lines = f.readlines()
+    for line in lines:
+        testLabels.append(int(line))
 
-        preds, vehicleType, boxPoints = predictModel(filePath, trainImages, trainLabels)
+    return trainImages, trainLabels, testImages, testLabels
 
-        result = np.argmax(preds, axis = -1)
+trainImages, trainLabels, testImages, testLabels = inputDataset('C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/newTrainPCA/*.jpg',
+                                                                'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/trainLabel.txt',
+                                                                'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/NewTestPCA/*.jpg',
+                                                                'C:/Users/razva/OneDrive/Desktop/Vehicle Color Recognition/dataset/testLabel.txt')
 
-        if result[0] == 0:
-            color = 'black'
-        elif result[0] == 1:
-            color = 'blue'
-        elif result[0] == 2:
-            color = 'brown'
-        elif result[0] == 3:
-            color = 'green'
-        elif result[0] == 4:
-            color = 'pink'
-        elif result[0] == 5:
-            color = 'red'
-        elif result[0] == 6:
-            color = 'silver'
-        elif result[0] == 7:
-            color = 'white'
-        elif result[0] == 8:
-            color = 'yellow'
 
-        output = color + ';' + vehicleType + ';[' + str(boxPoints[0]) + ', ' + str(boxPoints[1]) + ', ' + str(boxPoints[2]) + ', ' + str(boxPoints[3]) + ']'
+print('Choose: \n1). Naive Bayes \n2). KNN \n3). SVM \n4). CNN \n5). CNN with Flask \n')
 
-        return output
+opt = int(input('Your option: '))
 
-    return None
+if opt == 1:
+    naiveBayes(trainImages, trainLabels, testImages, testLabels)
+elif opt == 2:
+    knn(trainImages, trainLabels, testImages, testLabels)
+elif opt == 3:
+    svm(trainImages, trainLabels, testImages, testLabels)
+elif opt == 4:
+    cnn(trainImages, trainLabels, testImages, testLabels)
+elif opt == 5:
+    app = appFlask()
 
-app.run(debug = True)
+    @app.route('/', methods=['GET'])
+    def index():
+        # Main page
+        return render_template('index.html')
+
+    @app.route('/predict', methods=['GET', 'POST'])
+    def upload():
+        if request.method == 'POST':
+            # Get the file from post request
+            f = request.files['file']
+
+            # Save the file to ./uploads
+            basepath = os.path.dirname(__file__)
+            filePath = os.path.join(basepath, 'uploads', secure_filename(f.filename))
+            f.save(filePath)
+
+            sol = predictModel(filePath, trainImages, trainLabels)
+            output = ''
+
+            for i in range(len(sol)):
+                preds, vehicleType, boxPoints = sol[i]
+                result = np.argmax(preds, axis = -1)
+
+                if result[0] == 0:
+                    color = 'black'
+                elif result[0] == 1:
+                    color = 'blue'
+                elif result[0] == 2:
+                    color = 'brown'
+                elif result[0] == 3:
+                    color = 'green'
+                elif result[0] == 4:
+                    color = 'pink'
+                elif result[0] == 5:
+                    color = 'red'
+                elif result[0] == 6:
+                    color = 'silver'
+                elif result[0] == 7:
+                    color = 'white'
+                elif result[0] == 8:
+                    color = 'yellow'
+
+                output += color + ';' + vehicleType + ';[' + str(boxPoints[0]) + ', ' + str(boxPoints[1]) + ', ' + str(
+                    boxPoints[2]) + ', ' + str(boxPoints[3]) + ']|'
+
+            output = output[:-1]
+            return output
+
+        return None
+
+    app.run(debug = True)

@@ -49,7 +49,8 @@ $(document).ready(function () {
             async: true,
             success: function (data) {
                 // Get and display the result
-                x = data.split(';')
+                x = data.split('|')
+                x = x[0].split(';')
                 $('.loader').hide();
                 $('#result1').fadeIn(600);
                 $('#result1').text(' Color:  ' + x[0]);
